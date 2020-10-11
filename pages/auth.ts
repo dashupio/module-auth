@@ -32,14 +32,6 @@ export default class AuthPage extends Struct {
   }
 
   /**
-   * returns page data
-   */
-  get data() {
-    // return page data
-    return {};
-  }
-
-  /**
    * returns object of views
    */
   get views() {
@@ -58,7 +50,7 @@ export default class AuthPage extends Struct {
    */
   get categories() {
     // return array of categories
-    return ['frontend'];
+    return ['API'];
   }
 
   /**

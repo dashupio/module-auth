@@ -1,0 +1,157 @@
+<register>
+  <form accept-charset="UTF-8" class={ getClass('form', 'dashup-register') } onsubmit={ (e) => submit(e) } role="form" method="post" action={ getAction() }>        
+    <input class={ getClass('inputHidden', 'd-none') } name="key" value={ dashup.opts.key } type="hidden" />
+
+    <div if={ state.error } class={ getClass('alertError', 'alert alert-danger') } role="alert">
+      { state.error }
+    </div>
+    <div if={ state.success } class={ getClass('alertSuccess', 'alert alert-success') } role="alert">
+      { state.success }
+    </div>
+
+    <div each={ (field, i) in fields } if={ field.name.includes('password') || props.page.get(`data.field.${field.name}`) } class={ getClass('formGroup', 'mb-3') }>
+      <label for={ field.name } class="form-label">
+        { field.label }
+      </label>
+      <input class={ getClass('formControl', 'form-control') } placeholder={ field.label } name={ field.name } type={ field.type } id={ field.name } autocomplete={ field.name }>
+      <div class="invalid-feedback">
+        Please fill in your { field.label }
+      </div>
+    </div>
+
+    <hr />
+
+    <button type="submit" class={ `${getClass('submitButton', 'btn btn-primary btn-lg btn-block')}${state.loading ? ' disabled' : ''}` } tabindex="4">
+      { state.loading ? 'Registering...' : 'Register' }
+    </button>
+  </form>
+
+  <script>
+		// export default
+    export default {
+      components : {
+      },
+
+      onBeforeMount(props, state) {
+        // initial state
+        this.state = {
+					ready   : true,
+          error   : null,
+          success : null,
+          loading : false,
+        };
+
+        this.fields = [
+          {
+            name  : 'name',
+            type  : 'text',
+            label : 'Name',
+          },
+          {
+            name  : 'username',
+            type  : 'text',
+            label : 'Username',
+          },
+          {
+            name  : 'email',
+            type  : 'email',
+            label : 'Email',
+          },
+          {
+            name  : 'password',
+            type  : 'password',
+            label : 'Password',
+          },
+          {
+            name  : 'passworda',
+            type  : 'password',
+            label : 'Password Again',
+          }
+        ]
+
+        // bind methods
+        this.submit = this.submit.bind(this);
+
+        // set dashup
+        this.dashup = props.dashup;
+      },
+
+      /**
+       * on submit
+       */
+      async submit(e) {
+        // if event
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        // run
+        this.update({
+          error   : null,
+          success : null,
+          loading : true,
+        });
+
+        // get data
+        const data = {
+          id : this.props.page.get('_id'),
+        };
+        let result = null;
+
+        // setup data
+        (new FormData(this.$('form'))).forEach((value, key) => data[key] = value);
+
+        // try/catch
+        try {
+          // call on dashup
+          result = await this.props.page.register(data.email, data.password, data.passworda);
+        } catch (e) {
+          // do error
+          if (this.props.error) {
+            this.props.error(e);
+          }
+
+          // set error
+          return this.update({
+            error   : e.toString(),
+            loading : false,
+          });
+        }
+
+        // on success
+        if (this.props.success) {
+          // do success
+          this.props.success(result);
+        }
+
+        // set error
+        this.update({
+          success : 'Successfully registered',
+          loading : false,
+        });
+      },
+
+      getClass(name, def) {
+        // classes
+        const classes = this.props.classes || {};
+        
+        // check name
+        if (!classes[name]) return def;
+
+        // return props
+        return classes[name];
+      },
+
+      getAction() {
+        // get dashup and page
+        const page   = this.props.page;
+        const dashup = this.props.dashup;
+
+        // get url
+        return `${dashup.opts.url}/api/auth/${page.get('_id')}/register`;
+      }
+    }
+
+  </script>
+</register>

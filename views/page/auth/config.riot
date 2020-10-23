@@ -9,7 +9,7 @@
         The model for this authenticator.
       </small>
     </div>
-    <div class="mb-3">
+    <div class="mb-3" if={ !loading('model') && props.page.get('data.model') }>
       <label class="form-label">
         Auth Form
       </label>
@@ -143,7 +143,7 @@
         data[type] = val;
         
         // set model
-        this.props.onData('field', data);
+        this.props.data('field', data);
       }
 
 

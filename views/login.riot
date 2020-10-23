@@ -1,0 +1,136 @@
+<login>
+  <form accept-charset="UTF-8" class={ getClass('form', 'dashup-login') } onsubmit={ (e) => submit(e) } role="form">        
+    <input class={ getClass('inputHidden', 'd-none') } name="key" value={ dashup.opts.key } type="hidden" />
+
+    <div if={ state.error } class={ getClass('alertError', 'alert alert-danger') } role="alert">
+      { state.error }
+    </div>
+    <div if={ state.success } class={ getClass('alertSuccess', 'alert alert-success') } role="alert">
+      { state.success }
+    </div>
+
+    <div class={ getClass('formGroup', 'mb-3') }>
+      <label for="email" class="form-label">Email</label>
+      <input class={ getClass('formControl', 'form-control') } placeholder="Email" name="email" type="email" autocomplete="email">
+      <div class="invalid-feedback">
+        Please fill in your email
+      </div>
+    </div>
+
+    <div class={ getClass('formGroup', 'mb-3') }>
+      <div class="float-right" if={ props.forgotUrl }>
+        <a href={ props.forgotUrl } class="text-small">
+          Forgot Password?
+        </a>
+      </div>
+      <label for="password" class="form-label">Password</label>
+      <input class={ getClass('formControl', 'form-control') } placeholder="Password" name="password" type="password" autocomplete="current-password">
+      <div class="invalid-feedback">
+        please fill in your password
+      </div>
+    </div>
+
+    <div class={ getClass('formGroup', 'mb-3') }>
+      <div class="form-check">
+        <input type="checkbox" name="remember" class="form-check-input" tabindex="3" id="remember-me">
+        <label class="form-check-label" for="remember-me">Remember Me</label>
+      </div>
+    </div>
+
+    <button type="submit" class={ `${getClass('submitButton', 'btn btn-primary btn-lg btn-block')}${state.loading ? ' disabled' : ''}` } tabindex="4">
+      { state.loading ? 'Logging in...' : 'Login' }
+    </button>
+  </form>
+
+  <script>
+		// export default
+    export default {
+      components : {
+      },
+
+      onBeforeMount(props, state) {
+        // initial state
+        this.state = {
+					ready   : true,
+          error   : null,
+          success : null,
+          loading : false,
+        };
+
+        // bind methods
+        this.submit = this.submit.bind(this);
+
+        // set dashup
+        this.dashup = props.dashup;
+      },
+
+      /**
+       * on submit
+       */
+      async submit(e) {
+        // if event
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+
+        // run
+        this.update({
+          error   : null,
+          success : null,
+          loading : true,
+        });
+
+        // get data
+        const data = {
+          id : this.props.page.get('_id'),
+        };
+        let result = null;
+
+        // setup data
+        (new FormData(this.$('form'))).forEach((value, key) => data[key] = value);
+
+        // try/catch
+        try {
+          // call on dashup
+          result = await this.props.page.login(data.email, data.password);
+        } catch (e) {
+          // do error
+          if (this.props.error) {
+            this.props.error(e);
+          }
+          
+          // set error
+          return this.update({
+            error   : e.toString(),
+            loading : false,
+          });
+        }
+
+        // on success
+        if (this.props.success) {
+          // do success
+          this.props.success(result);
+        }
+
+        // set error
+        this.update({
+          success : 'Successfully logged in',
+          loading : false,
+        });
+      },
+
+      getClass(name, def) {
+        // classes
+        const classes = this.props.classes || {};
+        
+        // check name
+        if (!classes[name]) return def;
+
+        // return props
+        return classes[name];
+      }
+    }
+
+  </script>
+</login>

@@ -26,7 +26,7 @@
         <label class="form-label">
           { field.label } Field
         </label>
-        <eden-select on-change={ (e, value) => onField(field.name, value) } ref={ ref(field.name) } placeholder={ `Select ${field.label}` } data={ getField(field.name) } />
+        <eden-select on-change={ (e, value) => onField(field.name, value) } ref={ ref(field.name) } placeholder={ `Select ${field.label}` } data={ getField(field.name, field.type) } />
       </div>
     </div>
   </div>
@@ -192,14 +192,14 @@
       /**
        * get field
        */
-      getField(type) {
+      getField(val, type) {
         // return value
-        return this.props.context.fields.map((field) => {
+        return [...(this.props.context.fields)].filter((field) => type.includes(field.type)).map((field) => {
           // return value
           return {
             name     : field.label,
             value    : field.uuid,
-            selected : this.props.page.get(`data.field.${type}`) === field.uuid,
+            selected : this.props.page.get(`data.field.${val}`) === field.uuid,
           };
         });
       }

@@ -13,7 +13,7 @@
       <label class="form-label">
         Auth Form
       </label>
-      <eden-select onchange={ (e, val) => onForms(val) } ref={ ref('form') } placeholder="Select Form" data={ getForm() } />
+      <eden-select on-change={ (e, val) => onForm(val) } ref={ ref('form') } placeholder="Select Form" data={ getForm() } />
       <small>
         The form for this authenticator.
       </small>
@@ -97,7 +97,7 @@
         this.loading('model', true);
 
         // set again
-        if (val !== this.props.page.get('data.model')) {
+        if (this.props.page.get('data.model') && val !== this.props.page.get('data.model')) {
           // set form again
           await this.props.data('form', null);
         }

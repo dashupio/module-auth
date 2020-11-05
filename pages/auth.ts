@@ -62,6 +62,6 @@ export default class AuthPage extends Struct {
    */
   get description() {
     // return description string
-    return 'Page Descripton';
+    return 'Authentication API page';
   }
 }

@@ -103,7 +103,7 @@
         // try/catch
         try {
           // call on dashup
-          result = await this.props.page.register(data.email, data.password, data.passworda);
+          result = await this.props.page.register(data);
         } catch (e) {
           // do error
           if (this.props.error) {

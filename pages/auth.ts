@@ -37,15 +37,13 @@ export default class AuthPage extends Struct {
   get views() {
     // return object of views
     return {
+      view   : 'page/auth',
+      config : 'page/auth/config',
+      /*
       login    : 'login',
       social   : 'social',
       register : 'register',
-
-      view     : 'page/auth/view',
-      menu     : 'page/auth/menu',
-      config   : 'page/auth/config',
-      filter   : 'page/auth/filter',
-      connects : 'page/auth/connects',
+      */
     };
   }
 

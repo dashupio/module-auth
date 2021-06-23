@@ -1,18 +1,19 @@
 
 // import dependencies
-import React, { useState } from 'react';
-import { Page, Grid, View, Hbs } from '@dashup/ui';
 import { Dropdown, OverlayTrigger, Popover, Button } from 'react-bootstrap';
+import { Page, Grid, View, Hbs } from '@dashup/ui';
+import React, { useState, useEffect } from 'react';
 
-// create model page
-const AuthPage = (props = {}) => {
+// create gallery page
+const PageAuth = (props = {}) => {
   // groups
   const [skip, setSkip] = useState(0);
   const [total, setTotal] = useState(0);
+  const [groups, setGroups] = useState(null);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [prevent, setPrevent] = useState(false);
+  const [updated, setUpdated] = useState(new Date());
   const [selected, setSelected] = useState({ type : 'items', items : [] });
 
   // required
@@ -23,19 +24,97 @@ const AuthPage = (props = {}) => {
     key   : 'data.form',
     label : 'Form',
   }];
+  
+  // load groups
+  const loadGroups = async () => {
+    // check groupBy
+    if (!props.page.get('data.group')) return;
+
+    // get groupBy field
+    const groupBy = props.getFields().find((f) => f.uuid === props.page.get('data.group'));
+
+    // check groupBy field
+    if (!groupBy) return;
+
+    // check if groupBy field has config options
+    if (groupBy.options) {
+      // return options
+      return [...(groupBy.options || [])].map((option) => {
+        // check option
+        return {
+          ...option,
+
+          key : groupBy.name || groupBy.uuid,
+        };
+      });
+    }
+
+    // check if groupBy field is a user field
+    if (groupBy.type === 'user') {
+      // members
+      const members = await eden.router.get(`/app/${props.dashup.get('_id')}/member/query`);
+
+      // return members
+      return members.map((member) => {
+        // return key
+        return {
+          key   : groupBy.name || groupBy.uuid,
+          label : member.name,
+          value : member.id,
+        };
+      });
+    }
+
+    // load other groupBy field by unique in db
+    const uniqueGroups = await props.getQuery().count(groupBy.name || groupBy.uuid, true);
+
+    // check counts
+    if (uniqueGroups && Object.keys(uniqueGroups).length < 20) {
+      // return map
+      return Object.keys(uniqueGroups).map((key) => {
+        // return key
+        return {
+          key   : groupBy.name || groupBy.uuid,
+          label : key,
+          value : key,
+        };
+      });
+    }
+
+    // return nothing
+    return null;
+  };
 
   // load data
-  const loadData = async () => {
-    // get total
-    const newTotal = await props.getQuery().count();
+  const loadData = async (group) => {
+    // get query
+    const getQuery = () => {
+      // return where
+      return group ? props.getQuery().where({
+        [group.key] : group.value,
+      }) : props.getQuery();
+    };
 
-    // set number total
-    setTotal(newTotal);
+    // get total
+    const newTotal = await getQuery().count();
+
+    // actual total
+    if (group) {
+      // set it as logic
+      if (false) setTotal({
+        ...(typeof total === 'object' ? total : {}),
+
+        [group.value] : newTotal,
+      });
+    } else {
+      // set number total
+      setTotal(newTotal);
+    }
 
     // return items
     return {
       total : newTotal,
-      items : await props.getQuery().skip(skip).limit(props.page.get('data.limit') || 25).listen(),
+      items : await getQuery().skip(skip).limit(props.page.get('data.limit') || 25).listen(),
     };
   };
 
@@ -125,7 +204,7 @@ const AuthPage = (props = {}) => {
     ...(props.getForms()[0] && props.getForms()[0].get ? [{
       id   : 'remove',
       href : (item) => {
-        return props.getForms()[0] ? `/app/${props.getForms()[0].get('_id')}/${item.get('_id')}/remove?redirect=${window.location.href}` : null;
+        return props.getForms()[0] ? `/app/${props.getForms()[0].get('_id')}/${item.get('_id')}/remove?redirect=/app/${props.page.get('_id')}` : null;
       },
       icon    : 'trash fas',
       content : 'Remove',
@@ -133,10 +212,44 @@ const AuthPage = (props = {}) => {
     }] : []),
   ];
 
+  // set tag
+  const setTag = async (field, value) => {
+    // set tag
+    let tags = (props.page.get('user.filter.tags') || []).filter((t) => typeof t === 'object');
+
+    // check tag
+    if (tags.find((t) => t.field === field.uuid && t.value === (value?.value || value))) {
+      // exists
+      tags = tags.filter((t) => t.field !== field.uuid || t.value !== (value?.value || value));
+    } else {
+      // push tag
+      tags.push({
+        field : field.uuid,
+        value : (value?.value || value),
+      });
+    }
+
+    // set data
+    await props.setUser('filter.tags', tags);
+  };
+
   // set sort
-  const setSort = async (column, way) => {
+  const setSort = async (column, way = 1) => {
     // let sort
     let sort;
+
+    // check field
+    if (
+      (column.field !== 'custom' && column.field === props.page.get('data.sort.field')) ||
+      (column.field === 'custom' && column.sort === props.page.get('data.sort.sort'))
+    ) {
+      // reverse sort
+      if (props.page.get('data.sort.way') === -1) {
+        column = null;
+      } else {
+        way = -1;
+      }
+    }
     
     // set sort
     if (!column) {
@@ -152,26 +265,20 @@ const AuthPage = (props = {}) => {
       };
     }
 
-    // set loading
-    setLoading(true);
-
     // set data
     await props.setData('sort', sort);
-
-    // set loading
-    setLoading(false);
   };
 
   // set sort
   const setLimit = async (limit = 25) => {
-    // set loading
-    setLoading(true);
-
     // set data
     await props.setData('limit', limit);
+  };
 
-    // set loading
-    setLoading(false);
+  // set search
+  const setSearch = (search = '') => {
+    // set page data
+    props.page.set('user.search', search.length ? search : null);
   };
 
   // set columns
@@ -180,8 +287,14 @@ const AuthPage = (props = {}) => {
     props.setData('columns', columns);
   };
 
+  // set filter
+  const setFilter = async (filter) => {
+    // set data
+    props.setUser('query', filter, true);
+  };
+
   // is selected
-  const isSelected = (item) => {
+  const isSelected = (item, group) => {
     // check type
     if (selected.type === 'all') return true;
     if (selected.type === 'items') return selected.items.includes(item.get('_id'));
@@ -189,7 +302,7 @@ const AuthPage = (props = {}) => {
   };
 
   // on select
-  const onSelect = (item) => {
+  const onSelect = (item, group) => {
     // set selected
 
     // check type
@@ -242,9 +355,50 @@ const AuthPage = (props = {}) => {
     setSelected({ ...selected });
   };
 
+  // use effect
+  useEffect(() => {
+    // load groups
+    loadGroups().then((groups) => {
+      setGroups(groups);
+    });
+
+    // on update
+    const onUpdate = () => {
+      setUpdated(new Date());
+    };
+
+    // add listener
+    props.page.on('data.sort', onUpdate);
+    props.page.on('data.group', onUpdate);
+    props.page.on('data.filter', onUpdate);
+    props.page.on('user.search', onUpdate);
+    props.page.on('user.filter.me', onUpdate);
+    props.page.on('user.filter.tags', onUpdate);
+
+    // return fn
+    return () => {
+      // remove listener
+      props.page.removeListener('data.sort', onUpdate);
+      props.page.removeListener('data.group', onUpdate);
+      props.page.removeListener('data.filter', onUpdate);
+      props.page.removeListener('user.search', onUpdate);
+      props.page.removeListener('user.filter.me', onUpdate);
+      props.page.removeListener('user.filter.tags', onUpdate);
+    };
+  }, [
+    props.page.get('_id'),
+    props.page.get('type'),
+    props.page.get('data.sort'),
+    props.page.get('data.group'),
+    props.page.get('data.filter'),
+    props.page.get('user.search'),
+    props.page.get('user.filter.me'),
+    props.page.get('user.filter.tags'),
+  ]);
+
   // return jsx
   return (
-    <Page { ...props } loading={ loading } require={ required } bodyClass="flex-column">
+    <Page { ...props } require={ required } bodyClass="flex-column">
 
       <Page.Config show={ config } onHide={ (e) => setConfig(false) } />
 
@@ -296,37 +450,77 @@ const AuthPage = (props = {}) => {
           ) }
         </>
       </Page.Menu>
-      SUB MENU
-      <Page.Body>
-        <Grid
-          id={ props.page.get('_id') }
-          skip={ skip }
-          sort={ props.page.get('data.sort') || {} }
-          limit={ props.page.get('data.limit') || 25 }
-          columns={ props.page.get('data.columns') || [] }
-          available={ props.getFields() }
+      <Page.Filter onSearch={ setSearch } onSort={ setSort } onTag={ setTag } onFilter={ setFilter } isString />
+      { !required.find((r) => !props.page.get(r.key)) && (
+        <Page.Body>
+          
+          { groups && groups.length ? (
+            <div className="d-flex flex-column w-100">
+              { groups.map((group) => {
+                // return jsx
+                return (
+                  <Grid
+                    id={ props.page.get('_id') }
+                    key={ `group-${group.id || group.label}` }
+                    skip={ skip }
+                    sort={ props.page.get('data.sort') || {} }
+                    limit={ props.page.get('data.limit') || 25 }
+                    saving={ saving }
+                    columns={ props.page.get('data.columns') || [] }
+                    className="w-100"
+                    available={ props.getFields() }
 
-          canAlter={ props.dashup.can(props.page, 'alter') }
-          canSubmit={ props.dashup.can(props.page, 'submit') }
+                    canAlter={ props.dashup.can(props.page, 'alter') }
+                    canSubmit={ props.dashup.can(props.page, 'submit') }
 
-          setSort={ setSort }
-          setSkip={ setSkip }
-          actions={ actions }
-          loadData={ loadData }
-          setLimit={ setLimit }
-          setColumns={ setColumns }
-          renderField={ renderField }
-        >
-          <Grid.Group
-            onSelect={ onSelect }
-            selected={ selected }
-            isSelected={ isSelected }
-          />
-        </Grid>
-      </Page.Body>
+                    setSort={ setSort }
+                    setSkip={ setSkip }
+                    actions={ actions }
+                    loadData={ () => loadData(group) }
+                    setLimit={ setLimit }
+                    setColumns={ setColumns }
+                    renderField={ renderField }
+                  >
+                    <Grid.Group
+                      label={ group.label }
+                    />
+                  </Grid>
+                );
+              }) }
+            </div>
+          ) : (
+            <Grid
+              id={ props.page.get('_id') }
+              skip={ skip }
+              sort={ props.page.get('data.sort') || {} }
+              limit={ props.page.get('data.limit') || 25 }
+              columns={ props.page.get('data.columns') || [] }
+              available={ props.getFields() }
+
+              canAlter={ props.dashup.can(props.page, 'alter') }
+              canSubmit={ props.dashup.can(props.page, 'submit') }
+              fullHeight
+
+              setSort={ setSort }
+              setSkip={ setSkip }
+              actions={ actions }
+              loadData={ loadData }
+              setLimit={ setLimit }
+              setColumns={ setColumns }
+              renderField={ renderField }
+            >
+              <Grid.Group
+                onSelect={ onSelect }
+                selected={ selected }
+                isSelected={ isSelected }
+              />
+            </Grid>
+          ) }
+        </Page.Body>
+      ) }
     </Page>
   );
 };
 
 // export default model page
-export default AuthPage;
+export default PageAuth;

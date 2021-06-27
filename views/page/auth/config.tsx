@@ -35,7 +35,7 @@ const PageAuthConfig = (props = {}) => {
     // get forms
     const models = Array.from(props.dashup.get('pages').values()).filter((page) => {
       // return model pages
-      return page.get('type') === 'model';
+      return page.get('type') === 'model' && !page.get('archived');
     });
 
     // return mapped
@@ -55,7 +55,7 @@ const PageAuthConfig = (props = {}) => {
     // get forms
     const forms = Array.from(props.dashup.get('pages').values()).filter((page) => {
       // return model pages
-      return page.get('type') === 'form' && page.get('data.model') === props.page.get('data.model');
+      return page.get('type') === 'form' && page.get('data.model') === props.page.get('data.model') && !page.get('archived');
     });
 
     // return mapped
@@ -75,7 +75,7 @@ const PageAuthConfig = (props = {}) => {
     // get forms
     const dashboards = Array.from(props.dashup.get('pages').values()).filter((page) => {
       // return model pages
-      return page.get('type') === 'dashboard' && page.get('data.model') === props.page.get('data.model');
+      return page.get('type') === 'dashboard' && page.get('data.model') === props.page.get('data.model') && !page.get('archived');
     });
 
     // return mapped

@@ -39,11 +39,10 @@ export default class AuthPage extends Struct {
     return {
       view   : 'page/auth',
       config : 'page/auth/config',
-      /*
+      
       login    : 'login',
       social   : 'social',
       register : 'register',
-      */
     };
   }
 

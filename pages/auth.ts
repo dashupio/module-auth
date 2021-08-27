@@ -20,7 +20,7 @@ export default class AuthPage extends Struct {
    */
   get icon() {
     // return page type label
-    return 'fa fa-users';
+    return 'fad fa-users text-primary';
   }
 
   /**
@@ -28,7 +28,7 @@ export default class AuthPage extends Struct {
    */
   get title() {
     // return page type label
-    return 'Auth Page';
+    return 'Authentication';
   }
 
   /**
@@ -59,6 +59,6 @@ export default class AuthPage extends Struct {
    */
   get description() {
     // return description string
-    return 'Authentication API page';
+    return 'Embedable login, registration, and forgot password API';
   }
 }

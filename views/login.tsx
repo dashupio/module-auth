@@ -40,6 +40,9 @@ const AuthLogin = (props = {}) => {
     try {
       // call on dashup
       result = await props.page.login(data.email, data.password);
+
+      // check result
+      if (!(result instanceof props.dashup.Model)) throw new Error(result.message);
     } catch (e) {
       // do error
       if (props.error) {
@@ -48,7 +51,7 @@ const AuthLogin = (props = {}) => {
       
       // set error
       setError(e.toString());
-      setLoading(false);
+      return setLoading(false);
     }
 
     // on success

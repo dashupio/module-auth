@@ -69,6 +69,9 @@ const AuthRegister = (props = {}) => {
     try {
       // call on dashup
       result = await props.page.register(data);
+
+      // check result
+      if (!(result instanceof props.dashup.Model)) throw new Error(result.message);
     } catch (e) {
       // do error
       if (props.error) {
@@ -77,7 +80,7 @@ const AuthRegister = (props = {}) => {
 
       // set error
       setError(e.toString());
-      setLoading(false);
+      return setLoading(false);
     }
 
     // on success
@@ -114,7 +117,7 @@ const AuthRegister = (props = {}) => {
 
   // return jsx
   return (
-    <form accept-charset="UTF-8" className={ getClass('form', 'dashup-register') } onSubmit={ (e) => onSubmit(e) } role="form" method="post" action={ getAction() }>        
+    <form ref={ formRef } accept-charset="UTF-8" className={ getClass('form', 'dashup-register') } onSubmit={ (e) => onSubmit(e) } role="form" method="post" action={ getAction() }>        
       <input className={ getClass('inputHidden', 'd-none') } name="key" value={ dashup.opts.key } type="hidden" />
 
       { !!error && (
